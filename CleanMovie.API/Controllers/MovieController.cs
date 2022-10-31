@@ -1,19 +1,23 @@
 ﻿using CleanMovie.Application;
 using CleanMovie.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
 namespace CleanMovie.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MovieController : ControllerBase
     {
         private readonly IMovieService _movieService;
+        private readonly ITokenRepository _tokenRepository;
 
-        public MovieController(IMovieService movieService)
+        public MovieController(IMovieService movieService, ITokenRepository tokenRepository)
         {
             _movieService = movieService;
+            _tokenRepository = tokenRepository;
         }
 
         // GET: api/<MovieController>
@@ -39,16 +43,18 @@ namespace CleanMovie.API.Controllers
             return Ok(Movie);
         }
 
-        // PUT api/<MovieController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("authenticate")]
 
-        // DELETE api/<MovieController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Authenticate(User user)
         {
+            var token = _tokenRepository.Authenticate(user);
+            if (token == null)
+            {
+                return Unauthorized();
+            }
+            return Ok(token);
         }
     }
 }
